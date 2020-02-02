@@ -1,0 +1,6 @@
+CREATE DATABASE pclas;
+CREATE TABLE becarios ( ip BIGINT PRIMARY KEY, nombre VARCHAR(64), r0 int , r1 int, r2 int, r3 int, r4 int, r5 int, r6 int );
+CREATE TALBE reto1( ip BIGINT, t time);
+SELECT t2.nombre FROM (SELECT ip FROM reto1 ORDER BY t DESC LIMIT 5) AS t1 INNER JOIN (SELECT * FROM becarios) as t2 ON t1.ip = t2.ip;
+SELECT r1 + r2 + r3 + r4 + r5 + r6 AS calif FROM becarios;
+SELECT nombre FROM becarios WHERE '127.0.0.1' = INET_NTOA(ip);

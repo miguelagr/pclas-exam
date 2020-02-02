@@ -1,15 +1,20 @@
-#include <unistd.h> 
-#include <stdio.h> 
-#include <sys/socket.h> 
+// Standar lib
 #include <stdlib.h> 
+#include <stdio.h> 
+#include <pthread.h>
+#include <time.h>
+// system includes
+#include <unistd.h> 
+#include <sys/socket.h> 
 #include <netinet/in.h> 
-
+// User includes
 #include "conf.h"
 #include "retos.h"
 
 int main(int argc, char const **argv)
 { 
 	int i;
+	void * ptr;
 	int fd_s, fd_c;
 	struct sockaddr_in addr;
 	int opt = 1;
@@ -39,17 +44,23 @@ int main(int argc, char const **argv)
 	if(listen(fd_s, 1000) < 0)
 		printf("Fallo al poner en escucha"), exit(1);
 
+	if(i == 0)
+	{
+		srand(time(NULL));
+	}
+
 	while(1)
 	{
 		if ((fd_c = accept(fd_s, (struct sockaddr *)&addr,(socklen_t*)&addrlen))<0)
 			printf("No se pudo aceptar conexion"), exit(1);
 
-		if(fork())
-			continue;
-		else
-			break;
-
+		ptr = malloc(sizeof(con_t));
+		((con_t * ) ptr)->self = ptr;
+		((con_t * ) ptr)->fd = fd_c;
+		((con_t * ) ptr)->info = addr;
+		pthread_create( &((con_t * ) ptr)->id , NULL, rt3, ptr);
+		//juego_nombre(fd_c, addr);
+		//free(ptr);
 	}
-	juego_nombre(fd_c, addr);
 	return 0;
 } 
