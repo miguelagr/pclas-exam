@@ -7,6 +7,7 @@
 #include <unistd.h> 
 #include <sys/socket.h> 
 #include <netinet/in.h> 
+#include <sys/time.h>
 // User includes
 #include "conf.h"
 #include "retos.h"
@@ -19,8 +20,17 @@ int main(int argc, char const **argv)
 	struct sockaddr_in addr;
 	int opt = 1;
 	int addrlen = sizeof(addr);
+	void * (*ret_arr[7])(void *);
+	struct timeval tv;
 
-	for(i = 0; i < 5; i++)
+	ret_arr[0] = rt0;
+	ret_arr[1] = rt1;
+	ret_arr[2] = rt2;
+	ret_arr[3] = rt3;
+	ret_arr[4] = rt4;
+	ret_arr[5] = rt5;
+
+	for(i = 0; i < 7; i++)
 		if(! (opt = fork())) break;
 
 	if(opt)
@@ -44,21 +54,22 @@ int main(int argc, char const **argv)
 	if(listen(fd_s, 1000) < 0)
 		printf("Fallo al poner en escucha"), exit(1);
 
-	if(i == 0)
-	{
-		srand(time(NULL));
-	}
+	srand(time(NULL));
 
 	while(1)
 	{
 		if ((fd_c = accept(fd_s, (struct sockaddr *)&addr,(socklen_t*)&addrlen))<0)
 			printf("No se pudo aceptar conexion"), exit(1);
 
+		
+		tv.tv_sec = 1;
+		tv.tv_usec = 0;
+		setsockopt(fd_c, SOL_SOCKET, SO_RCVTIMEO , &tv, sizeof(tv));
 		ptr = malloc(sizeof(con_t));
 		((con_t * ) ptr)->self = ptr;
 		((con_t * ) ptr)->fd = fd_c;
 		((con_t * ) ptr)->info = addr;
-		pthread_create( &((con_t * ) ptr)->id , NULL, rt0, ptr);
+		pthread_create( &((con_t * ) ptr)->id , NULL, ret_arr[i], ptr);
 		//juego_nombre(fd_c, addr);
 		//free(ptr);
 	}
