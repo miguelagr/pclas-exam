@@ -1,6 +1,9 @@
-CREATE DATABASE pclas;
-CREATE TABLE becarios ( ip BIGINT PRIMARY KEY, nombre VARCHAR(64), r0 int , r1 int, r2 int, r3 int, r4 int, r5 int, r6 int );
-CREATE TALBE reto1( ip BIGINT, t time);
-SELECT t2.nombre FROM (SELECT ip FROM reto1 ORDER BY t DESC LIMIT 5) AS t1 INNER JOIN (SELECT * FROM becarios) as t2 ON t1.ip = t2.ip;
-SELECT r1 + r2 + r3 + r4 + r5 + r6 AS calif FROM becarios;
-SELECT nombre FROM becarios WHERE '127.0.0.1' = INET_NTOA(ip);
+CREATE USER becariosmaster;
+CREATE DATABASE becarios;
+GRANT ALL PRIVILEGES ON becarios.* TO becariosmaster;
+CREATE TABLE becarios ( ip BIGINT PRIMARY KEY, nombre VARCHAR(64) , r1 INT DEFAULT 0, r2 INT DEFAULT 0, r3 INT DEFAULT 0, r4 INT DEFAULT 0, r5 DEFAULT 0 );
+CREATE TALBE reto1( ip BIGINT, t BIGINT);
+CREATE TALBE reto2( ip BIGINT, t BIGINT);
+CREATE TALBE reto3( ip BIGINT, t BIGINT);
+cREATE TALBE reto4( ip BIGINT, t BIGINT);
+CREATE TALBE reto5( ip BIGINT, t BIGINT);
