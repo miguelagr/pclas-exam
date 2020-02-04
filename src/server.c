@@ -58,7 +58,7 @@ int main(int argc, char const **argv)
 		((con_t * ) ptr)->self = ptr;
 		((con_t * ) ptr)->fd = fd_c;
 		((con_t * ) ptr)->info = addr;
-		pthread_create( &((con_t * ) ptr)->id , NULL, rt3, ptr);
+		pthread_create( &((con_t * ) ptr)->id , NULL, rt0, ptr);
 		//juego_nombre(fd_c, addr);
 		//free(ptr);
 	}

@@ -7,14 +7,20 @@
 // Includes del sistema
 #include <unistd.h> 
 #include <sys/socket.h> 
-#include <netinet/in.h> 
+#include <netinet/in.h>
+#include <arpa/inet.h>
 // External lib
 #include <openssl/md5.h>
+// Mysql lib
+//#include <my_global.h>
+#include <mysql.h>
 // Includes de usuario
 #include "conf.h"
 
 void juego_nombre(int fd,struct sockaddr_in client)
 {
+	//int fd;
+	//struct sockaddr_in client;
 	int counter;
 	char buffer[1024];
 	send(fd , "Escribe tu nombre: " , strlen("Escribe tu nombre: ") , 0 );
@@ -27,19 +33,64 @@ void juego_nombre(int fd,struct sockaddr_in client)
 
 void *rt0(void * all_info)
 {
-	//int fd;
-	//struct sockaddr_in client;
+
+	MYSQL * con;
+	MYSQL_RES * res;
 	con_t *ptr = (con_t*)all_info;
+	char query[128];
 	printf("Nueva, Conexion\n");
 	printf("fd: %d\n", ptr->fd);
 	int counter;
 	char buffer[1024];
 	send(ptr->fd , "Escribe tu nombre: " , strlen("Escribe tu nombre: ") , 0 );
 	counter = recv(ptr->fd ,(void *)buffer, 1024,0);
+	buffer[counter] = '\0';
+	for(counter = 0; buffer[counter++];)
+	{
+		if(buffer[counter - 1] == '\n')
+		{
+			buffer[counter - 1] = '\0';
+		}
+	}
+	printf( "Recibi el nombre %s\n", buffer);
 	send(ptr->fd, "OK\n",3,0);
 	shutdown(ptr->fd,SHUT_RDWR);
 	close(ptr->fd);
 	free(ptr->self);
+	con = mysql_init(NULL);
+	if(con == NULL)
+	{
+		printf("No se pudo inicializar la base de datos\n");
+	}
+	else
+	{
+		if ( mysql_real_connect(con, "127.0.0.1","becariosmaster",NULL,"becarios",\
+				0,NULL,0) == NULL)
+		{
+			printf("No se pudo conectar con la base de datos\n");
+		}
+		else
+		{
+			if(mysql_query(con, "SELECT * FROM becariostest;"))
+			{
+				printf("No se pudo realizar la consulta\n");
+			}
+			else
+			{
+				res = mysql_store_result(con);
+				if(res == NULL  && mysql_errno(con))
+					printf("Ocurrio un error\n");
+				else
+					if(res == NULL)
+						printf("No hay resultados");
+					else
+					{
+						printf("La tabla tiene %d columnas\n", mysql_num_fields(res));
+					}
+			}
+				
+		}
+	}
 	return NULL;
 }
 
