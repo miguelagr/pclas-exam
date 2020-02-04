@@ -26,14 +26,18 @@ void *rt0(void * all_info)
 
 	MYSQL * con;
 	MYSQL_RES * res;
+	MYSQL_ROW  row;
 	con_t *ptr = (con_t*)all_info;
-	char query[128];
 	//printf("Nueva, Conexion\n");
 	//printf("fd: %d\n", ptr->fd);
 	int counter;
+	char s_ip[128];
+	char query[256];
 	char buffer[1024];
 	send(ptr->fd , "Escribe tu nombre: " , strlen("Escribe tu nombre: ") , 0 );
 	counter = recv(ptr->fd ,(void *)buffer, 1024,0);
+	if(counter == -1)
+		counter = 0;
 	buffer[counter] = '\0';
 	for(counter = 0; buffer[counter++];)
 	{
@@ -44,6 +48,14 @@ void *rt0(void * all_info)
 	}
 	printf("La longitud es: %d\n", strlen(buffer));
 	printf( "Recibi el nombre %s\n", buffer);
+	printf("DESDE %016x\n", ptr->info.sin_addr.s_addr);
+	printf("DESDE %lu\n", ptr->info.sin_addr.s_addr);
+	inet_ntop(AF_INET, &(ptr)->info.sin_addr, s_ip, INET_ADDRSTRLEN);
+	printf("%016x\n",ptr->info.sin_addr);
+	printf("Conexion desde %s\n", s_ip);
+	query[0] = '\0';
+	sprintf(query,"SELECT ip FROM becarios WHERE INET_NTOA(ip) = '%s';", s_ip);
+	printf("%s",query);
 	send(ptr->fd, "OK+0\n",strlen("OK+0\n"),0);
 	shutdown(ptr->fd,SHUT_RDWR);
 	close(ptr->fd);
@@ -62,7 +74,7 @@ void *rt0(void * all_info)
 		}
 		else
 		{
-			if(mysql_query(con, "SELECT * FROM becariostest;"))
+			if(mysql_query(con, query))
 			{
 				printf("No se pudo realizar la consulta\n");
 			}
@@ -72,13 +84,51 @@ void *rt0(void * all_info)
 				if(res == NULL  && mysql_errno(con))
 					printf("Ocurrio un error\n");
 				else
+				{
 					if(res == NULL)
-						printf("No hay resultados");
+					{
+
+					}
 					else
 					{
-						printf("La tabla tiene %d columnas\n", mysql_num_fields(res));
-						mysql_free_result(res);
+						row = mysql_fetch_row(res);
+						if( row == NULL)
+						{
+							query[0] = '\0';
+							sprintf(query,"INSERT INTO becarios(ip, nombre) values (inet_aton('%s'), '%s');", s_ip, buffer);
+							printf("%s", query);
+							mysql_free_result(res);
+							if(mysql_query(con, query))
+							{
+								printf("No se pudo realizar la consulta\n");
+							}
+							else
+							{
+								printf("Se ha actualizado");
+							}
+							printf("No hay resultados");
+						}else
+						{
+							query[0] = '\0';
+							sprintf(query,"UPDATE becarios SET nombre = '%s' WHERE inet_ntoa(ip) = '%s'", buffer, s_ip);
+							printf("%s", query);
+							mysql_free_result(res);
+							if(mysql_query(con, query))
+							{
+								printf("No se pudo realizar la consulta\n");
+							}
+							else
+							{
+								printf("Se ha actualizado");
+							}
+							printf("No hay resultados");
+						}
+						//printf("%d", row == NULL);
+						//printf("%s\n" , row[0]);
+						//printf("\nLa tabla tiene %d columnas\n", mysql_num_fields(res));
+						//mysql_free_result(res);
 					}
+				}
 			}
 			mysql_close(con);	
 		}
