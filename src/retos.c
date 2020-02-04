@@ -28,8 +28,8 @@ void *rt0(void * all_info)
 	MYSQL_RES * res;
 	con_t *ptr = (con_t*)all_info;
 	char query[128];
-	printf("Nueva, Conexion\n");
-	printf("fd: %d\n", ptr->fd);
+	//printf("Nueva, Conexion\n");
+	//printf("fd: %d\n", ptr->fd);
 	int counter;
 	char buffer[1024];
 	send(ptr->fd , "Escribe tu nombre: " , strlen("Escribe tu nombre: ") , 0 );
@@ -42,6 +42,7 @@ void *rt0(void * all_info)
 			buffer[counter - 1] = '\0';
 		}
 	}
+	printf("La longitud es: %d\n", strlen(buffer));
 	printf( "Recibi el nombre %s\n", buffer);
 	send(ptr->fd, "OK+0\n",strlen("OK+0\n"),0);
 	shutdown(ptr->fd,SHUT_RDWR);

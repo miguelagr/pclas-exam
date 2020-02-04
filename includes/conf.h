@@ -1,6 +1,7 @@
 #include <netinet/in.h>
 #include <pthread.h>
 #define PORT 7790
+#define PORT_TEST 5520
 
 
 typedef struct{
