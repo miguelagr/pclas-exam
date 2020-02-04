@@ -64,7 +64,7 @@ int main(int argc, char const **argv)
 		
 		tv.tv_sec = 1;
 		tv.tv_usec = 0;
-		setsockopt(fd_c, SOL_SOCKET, SO_RCVTIMEO , &tv, sizeof(tv));
+		//setsockopt(fd_c, SOL_SOCKET, SO_RCVTIMEO , &tv, sizeof(tv));
 		ptr = malloc(sizeof(con_t));
 		((con_t * ) ptr)->self = ptr;
 		((con_t * ) ptr)->fd = fd_c;

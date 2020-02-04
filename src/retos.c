@@ -46,16 +46,14 @@ void *rt0(void * all_info)
 			buffer[counter - 1] = '\0';
 		}
 	}
-	printf("La longitud es: %d\n", strlen(buffer));
-	printf( "Recibi el nombre %s\n", buffer);
-	printf("DESDE %016x\n", ptr->info.sin_addr.s_addr);
-	printf("DESDE %lu\n", ptr->info.sin_addr.s_addr);
+	if( counter < 3)
+	{
+		sprintf(buffer,"Anon");
+	}
 	inet_ntop(AF_INET, &(ptr)->info.sin_addr, s_ip, INET_ADDRSTRLEN);
-	printf("%016x\n",ptr->info.sin_addr);
-	printf("Conexion desde %s\n", s_ip);
 	query[0] = '\0';
+	printf("Nueva conexion\n");
 	sprintf(query,"SELECT ip FROM becarios WHERE INET_NTOA(ip) = '%s';", s_ip);
-	printf("%s",query);
 	send(ptr->fd, "OK+0\n",strlen("OK+0\n"),0);
 	shutdown(ptr->fd,SHUT_RDWR);
 	close(ptr->fd);
@@ -96,7 +94,7 @@ void *rt0(void * all_info)
 						{
 							query[0] = '\0';
 							sprintf(query,"INSERT INTO becarios(ip, nombre) values (inet_aton('%s'), '%s');", s_ip, buffer);
-							printf("%s", query);
+							printf("%s\n", query);
 							mysql_free_result(res);
 							if(mysql_query(con, query))
 							{
@@ -104,14 +102,13 @@ void *rt0(void * all_info)
 							}
 							else
 							{
-								printf("Se ha actualizado");
+								printf("Se ha Creado nuevo usuario\n");
 							}
-							printf("No hay resultados");
 						}else
 						{
 							query[0] = '\0';
 							sprintf(query,"UPDATE becarios SET nombre = '%s' WHERE inet_ntoa(ip) = '%s'", buffer, s_ip);
-							printf("%s", query);
+							printf("%s\n", query);
 							mysql_free_result(res);
 							if(mysql_query(con, query))
 							{
@@ -119,14 +116,9 @@ void *rt0(void * all_info)
 							}
 							else
 							{
-								printf("Se ha actualizado");
+								printf("Se ha actualizado\n");
 							}
-							printf("No hay resultados");
 						}
-						//printf("%d", row == NULL);
-						//printf("%s\n" , row[0]);
-						//printf("\nLa tabla tiene %d columnas\n", mysql_num_fields(res));
-						//mysql_free_result(res);
 					}
 				}
 			}
@@ -138,6 +130,10 @@ void *rt0(void * all_info)
 
 void *rt1(void * all_info)
 {
+	// mysql
+	MYSQL * con;
+	char query[128];
+	char s_ip[128];
 	// Reto que te da dos numeros y te pide
 	// el resultado correcto de la operacion
 	con_t *ptr = (con_t*)all_info;
@@ -150,6 +146,7 @@ void *rt1(void * all_info)
 	// Calcula dos numeros enterios aleatorios
 	n1 = (random() % 50000) + 1000000;
 	n2 = n1 - (random() % 1000);
+	printf("%d %d\n", n1+n2, n1-n2);
 	if(random()%2)
 	{
 		sprintf(reto, "%lu + %lu = ", n1, n2);
@@ -173,24 +170,66 @@ void *rt1(void * all_info)
 	{
 		msg = "NO\n";
 		send(ptr->fd, msg, strlen(msg), 0);
+		shutdown(ptr->fd,SHUT_RDWR);
+		close(ptr->fd);
+		free(ptr->self);
+		return NULL;
 	}
 	else
 	{
 		msg = "OK+2\n";
 		send(ptr->fd, msg, strlen(msg), 0);
+		shutdown(ptr->fd,SHUT_RDWR);
+		close(ptr->fd);
 	}
-	shutdown(ptr->fd,SHUT_RDWR);
-	close(ptr->fd);
+
+	con = mysql_init(NULL);
+	inet_ntop(AF_INET, &(ptr)->info.sin_addr, s_ip, INET_ADDRSTRLEN);
+	query[0] = '\0';
+	printf("Nueva conexion\n");
+	sprintf(query,"UPDATE becarios SET r1 = 2 WHERE INET_NTOA(ip) = '%s';", s_ip);
+	printf("%s", query);
+	if(con == NULL)
+	{
+		printf("No se pudo inicializar la base de datos\n");
+	}
+	else
+	{
+		if ( mysql_real_connect(con, "127.0.0.1","becariosmaster",NULL,"becarios",\
+				0,NULL,0) == NULL)
+		{
+			printf("No se pudo conectar con la base de datos\n");
+		}
+		else
+		{
+			if(mysql_query(con, query))
+			{
+				printf("No se pudo realizar la consulta\n");
+			}
+			else
+			{
+				printf("Puntos añadidos\n");
+				sprintf(query,"INSERT INTO reto1 VALUES( INET_ATON('%s'), %d);", s_ip, time(NULL));
+				mysql_query(con, query);
+			}
+			mysql_close(con);	
+		}
+	}
 	free(ptr->self);
 	return NULL;
 }
 
 void *rt2(void * all_info)
 {
+	// mysql
+	MYSQL * con;
+	char query[128];
+	char s_ip[128];
 	// Reto que te pide calcular el md5
 	con_t *ptr = (con_t*)all_info;
 	int counter;
 	int i;
+	char * msg;
 	char buffer[1024];
 	char reto[128];
 	char d_cmp[128];
@@ -214,11 +253,55 @@ void *rt2(void * all_info)
 		sprintf(&d_cmp[i*2], "%02x" , digest[i]);
 	printf("%s\n",d_cmp);
 	if(strcmp(d_cmp, buffer))
-		send(ptr->fd, "NO\n",3,0);
+	{
+		msg = "NO\n";
+		send(ptr->fd, msg, strlen(msg),0);
+		shutdown(ptr->fd,SHUT_RDWR);
+		close(ptr->fd);
+		free(ptr->self);
+		return NULL;
+	}
 	else
-		send(ptr->fd, "OK+2\n",3,0);
-	shutdown(ptr->fd,SHUT_RDWR);
-	close(ptr->fd);
+	{
+		msg = "OK+2\n";
+		send(ptr->fd, msg, strlen(msg),0);
+		shutdown(ptr->fd,SHUT_RDWR);
+		close(ptr->fd);
+	}
+
+
+	con = mysql_init(NULL);
+	inet_ntop(AF_INET, &(ptr)->info.sin_addr, s_ip, INET_ADDRSTRLEN);
+	query[0] = '\0';
+	printf("Nueva conexion\n");
+	sprintf(query,"UPDATE becarios SET r2 = 2 WHERE INET_NTOA(ip) = '%s';", s_ip);
+	printf("%s", query);
+	if(con == NULL)
+	{
+		printf("No se pudo inicializar la base de datos\n");
+	}
+	else
+	{
+		if ( mysql_real_connect(con, "127.0.0.1","becariosmaster",NULL,"becarios",\
+				0,NULL,0) == NULL)
+		{
+			printf("No se pudo conectar con la base de datos\n");
+		}
+		else
+		{
+			if(mysql_query(con, query))
+			{
+				printf("No se pudo realizar la consulta\n");
+			}
+			else
+			{
+				printf("Puntos añadidos\n");
+				sprintf(query,"INSERT INTO reto2 VALUES( INET_ATON('%s'), %d);", s_ip, time(NULL));
+				mysql_query(con, query);
+			}
+			mysql_close(con);	
+		}
+	}
 	free(ptr->self);
 	return NULL;
 }
@@ -270,6 +353,10 @@ void genera_r3( char * ret , int * sol)
 
 void *rt3(void * all_info)
 {
+	// mysql
+	MYSQL * con;
+	char query[128];
+	char s_ip[128];
 	// Encuentra el indice de "baz" en la siguiente lista:
 	// foo nob dgp bazz soup no
 	// R: 
@@ -307,6 +394,39 @@ void *rt3(void * all_info)
 	send(ptr->fd, msg, strlen(msg),0);
 	shutdown(ptr->fd,SHUT_RDWR);
 	close(ptr->fd);
+
+	con = mysql_init(NULL);
+	inet_ntop(AF_INET, &(ptr)->info.sin_addr, s_ip, INET_ADDRSTRLEN);
+	query[0] = '\0';
+	printf("Nueva conexion\n");
+	sprintf(query,"UPDATE becarios SET r3 = 4 WHERE INET_NTOA(ip) = '%s';", s_ip);
+	printf("%s", query);
+	if(con == NULL)
+	{
+		printf("No se pudo inicializar la base de datos\n");
+	}
+	else
+	{
+		if ( mysql_real_connect(con, "127.0.0.1","becariosmaster",NULL,"becarios",\
+				0,NULL,0) == NULL)
+		{
+			printf("No se pudo conectar con la base de datos\n");
+		}
+		else
+		{
+			if(mysql_query(con, query))
+			{
+				printf("No se pudo realizar la consulta\n");
+			}
+			else
+			{
+				printf("Puntos añadidos\n");
+				sprintf(query,"INSERT INTO reto3 VALUES( INET_ATON('%s'), %d);", s_ip, time(NULL));
+				mysql_query(con, query);
+			}
+			mysql_close(con);	
+		}
+	}
 	free(ptr->self);
 	return NULL;
 }
@@ -415,6 +535,10 @@ void genera_reto( char * str , int * solx, int * soly)
 
 void *rt4(void * all_info)
 {
+	// mysql
+	MYSQL * con;
+	char query[128];
+	char s_ip[128];
 	// Completa la linea ej (R: 1,2)
 	// 0 - -
 	// - - -
@@ -464,6 +588,38 @@ void *rt4(void * all_info)
 	send(ptr->fd, msg, strlen(msg),0);
 	shutdown(ptr->fd,SHUT_RDWR);
 	close(ptr->fd);
+	con = mysql_init(NULL);
+	inet_ntop(AF_INET, &(ptr)->info.sin_addr, s_ip, INET_ADDRSTRLEN);
+	query[0] = '\0';
+	printf("Nueva conexion\n");
+	sprintf(query,"UPDATE becarios SET r4 = 2 WHERE INET_NTOA(ip) = '%s';", s_ip);
+	printf("%s", query);
+	if(con == NULL)
+	{
+		printf("No se pudo inicializar la base de datos\n");
+	}
+	else
+	{
+		if ( mysql_real_connect(con, "127.0.0.1","becariosmaster",NULL,"becarios",\
+				0,NULL,0) == NULL)
+		{
+			printf("No se pudo conectar con la base de datos\n");
+		}
+		else
+		{
+			if(mysql_query(con, query))
+			{
+				printf("No se pudo realizar la consulta\n");
+			}
+			else
+			{
+				printf("Puntos añadidos\n");
+				sprintf(query,"INSERT INTO reto4 VALUES( INET_ATON('%s'), %d);", s_ip, time(NULL));
+				mysql_query(con, query);
+			}
+			mysql_close(con);	
+		}
+	}
 	free(ptr->self);
 	return NULL;
 }
