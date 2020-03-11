@@ -1,0 +1,5 @@
+CREATE TABLE reto1( ip BIGINT, time BIGINT);
+CREATE TABLE reto2( ip BIGINT, time BIGINT);
+CREATE TABLE reto3( ip BIGINT, time BIGINT);
+cREATE TABLE reto4( ip BIGINT, time BIGINT);
+CREATE TABLE reto5( ip BIGINT, time BIGINT);

@@ -24,13 +24,13 @@ int main(void)
 		return 0;
 	}
 	addr.sin_family = AF_INET;
-	addr.sin_port = htons(7791);
+	addr.sin_port = htons(7794);
 	if(inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr) <=0 )
 		printf("Direccion invalida\n");
 	if( connect( fd  , (struct sockaddr *) &addr, sizeof(addr)) < 0)
 			printf("No se pudo conectar");
 	c = recv(fd,chal,1024,0);
-    chal[c] = '\0';
+    	chal[c] = '\0';
 	printf("%s\n",chal);
     i = 0;
 	while(1)
